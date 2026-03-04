@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'widgets/network_overlay.dart';
 
 // Import your navigation shell file and auth screen
@@ -15,15 +14,10 @@ Future<void> main() async {
   // Required for async operations before runApp
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Load the environment variables from the .env file
-  await dotenv.load(fileName: ".env");
-
-  // 2. Initialize Supabase using the loaded variables
+  // Initialize Supabase directly with your keys!
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    // Even if you named your variable SUPABASE_SECRET_KEY in your .env,
-    // it maps to the anonKey parameter here. (Please swap the string for your anon key!)
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: 'https://bysdtpudtizvixtaqshy.supabase.co',
+    anonKey: 'sb_publishable_8I7rVCr3gb9ei-YjLG4VlA_QlErfQBq',
   );
 
   SystemChrome.setSystemUIOverlayStyle(
@@ -69,6 +63,7 @@ class RakshaApp extends StatelessWidget {
             fontFamily: 'Roboto',
           ),
 
+          // Global Network Overlay
           builder: (context, child) {
             return NetworkOverlay(child: child!);
           },
