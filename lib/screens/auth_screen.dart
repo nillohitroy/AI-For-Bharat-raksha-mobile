@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'literacy_module_screen.dart';
+
+// Import your navigation shell and main file for global variables
+import '../main.dart';
+import '../navigation_shell.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -55,11 +58,13 @@ class _AuthScreenState extends State<AuthScreen> {
         await prefs.setString('guardian_id', user.id);
 
         if (mounted) {
-          // Navigate to the main Hub
+          // THE FIX: Navigate to the main bottom Navigation Shell
+          // and pass the global themeNotifier so theme toggling works!
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const LiteracyModuleScreen(),
+              builder: (context) =>
+                  MainNavigationShell(themeNotifier: themeNotifier),
             ),
           );
         }

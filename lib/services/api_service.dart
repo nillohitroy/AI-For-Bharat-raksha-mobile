@@ -35,6 +35,30 @@ class ApiService {
   }
 
   // ==========================================
+  // Fetch AI Analysis for a Specific Threat
+  // ==========================================
+  Future<Map<String, dynamic>?> getThreatAnalysis(String threatId) async {
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/guardian/threat/$threatId/analyze"),
+        headers: {"Content-Type": "application/json"},
+      );
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      } else {
+        print(
+          "❌ Failed to fetch analysis: ${response.statusCode} - ${response.body}",
+        );
+        return null;
+      }
+    } catch (e) {
+      print("❌ Network error fetching analysis: $e");
+      return null;
+    }
+  }
+
+  // ==========================================
   // Fetch the AI gamified literacy module (For Threat Details)
   // ==========================================
   Future<Map<String, dynamic>?> fetchContextualModule(String threatId) async {

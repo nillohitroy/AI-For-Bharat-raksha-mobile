@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/network_overlay.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // Import your navigation shell file and auth screen
 import 'navigation_shell.dart';
@@ -19,6 +20,12 @@ Future<void> main() async {
     url: 'https://bysdtpudtizvixtaqshy.supabase.co',
     anonKey: 'sb_publishable_8I7rVCr3gb9ei-YjLG4VlA_QlErfQBq',
   );
+
+  final prefs = await SharedPreferences.getInstance();
+  final isDarkMode =
+      prefs.getBool('is_dark_mode') ??
+      false; // Defaults to false (light mode) if no save exists
+  themeNotifier.value = isDarkMode ? ThemeMode.dark : ThemeMode.light;
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),

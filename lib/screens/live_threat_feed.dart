@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; // <-- Added Supabase import
 import '../widgets/threat_card.dart';
 import 'settings_screen.dart';
 import '../services/sms_service.dart';
-import '../services/api_service.dart'; // <-- ADD THIS IMPORT
+import '../services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LiveThreatFeedScreen extends StatefulWidget {
   final ValueNotifier<ThemeMode> themeNotifier;
@@ -19,11 +21,15 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
   bool _isDeviceSecure = false;
   bool _isLoading = true;
 
+  // --- NEW: Dynamic User State ---
+  String _userFirstName = "Guardian";
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _checkSecurityStatus();
+    _loadUserProfile(); // Fetch the user data when screen loads
   }
 
   @override
@@ -36,6 +42,30 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkSecurityStatus();
+    }
+  }
+
+  // --- NEW: Fetch User Data Method ---
+  void _loadUserProfile() {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user != null) {
+      String name = "Guardian";
+
+      final metadata = user.userMetadata;
+      if (metadata != null && metadata.containsKey('full_name')) {
+        name = metadata['full_name'];
+      } else if (user.email != null) {
+        name = user.email!.split('@').first;
+      }
+
+      // Capitalize the first letter nicely
+      if (name.isNotEmpty) {
+        name = name[0].toUpperCase() + name.substring(1);
+      }
+
+      setState(() {
+        _userFirstName = name;
+      });
     }
   }
 
@@ -56,7 +86,6 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    const String userFirstName = "Guardian";
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -75,7 +104,7 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
                     ? 'Good afternoon'
                     : 'Good evening';
                 return Text(
-                  '$greeting, $userFirstName',
+                  '$greeting, $_userFirstName', // <-- Uses dynamic name now
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
@@ -86,7 +115,6 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
               },
             ),
             actions: [
-              // ... Theme toggle and profile avatar code stays exactly the same ...
               IconButton(
                 icon: Icon(
                   isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
@@ -95,10 +123,22 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
                       : const Color(0xFF2563EB),
                 ),
                 tooltip: 'Toggle Theme',
-                onPressed: () {
-                  widget.themeNotifier.value = isDark
+                onPressed: () async {
+                  // Make it async
+                  // 1. Calculate the new theme
+                  final newThemeMode = isDark
                       ? ThemeMode.light
                       : ThemeMode.dark;
+
+                  // 2. Update the UI instantly
+                  widget.themeNotifier.value = newThemeMode;
+
+                  // 3. Save it to device storage in the background
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool(
+                    'is_dark_mode',
+                    newThemeMode == ThemeMode.dark,
+                  );
                 },
               ),
               Padding(
@@ -117,7 +157,9 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
                         ? const Color(0xFF00F0FF).withOpacity(0.15)
                         : const Color(0xFF1E293B),
                     child: Text(
-                      userFirstName.substring(0, 1).toUpperCase(),
+                      _userFirstName.isNotEmpty
+                          ? _userFirstName[0].toUpperCase()
+                          : 'G', // <-- Uses dynamic initial
                       style: TextStyle(
                         color: isDark ? const Color(0xFF00F0FF) : Colors.white,
                         fontWeight: FontWeight.bold,
@@ -243,12 +285,10 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
             ),
           ),
 
-          // THIS IS THE NEW DYNAMIC SECTION
           SliverToBoxAdapter(
             child: FutureBuilder<List<dynamic>>(
               future: ApiService().fetchRecentThreats(),
               builder: (context, snapshot) {
-                // 1. Loading State
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Padding(
                     padding: EdgeInsets.all(40.0),
@@ -256,7 +296,6 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
                   );
                 }
 
-                // 2. Error State
                 if (snapshot.hasError) {
                   return const Padding(
                     padding: EdgeInsets.all(40.0),
@@ -268,7 +307,6 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
 
                 final threats = snapshot.data ?? [];
 
-                // 3. Empty State
                 if (threats.isEmpty) {
                   return const Padding(
                     padding: EdgeInsets.all(40.0),
@@ -281,11 +319,9 @@ class _LiveThreatFeedScreenState extends State<LiveThreatFeedScreen>
                   );
                 }
 
-                // 4. Success State (Dynamic List)
                 return ListView.builder(
-                  shrinkWrap: true, // Prevents layout errors inside ScrollView
-                  physics:
-                      const NeverScrollableScrollPhysics(), // Let CustomScrollView handle scrolling
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemCount: threats.length,
                   itemBuilder: (context, index) {
