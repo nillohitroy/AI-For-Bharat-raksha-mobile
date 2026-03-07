@@ -4,8 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Your active Ngrok URL
-  static const String baseUrl =
-      "https://unpretty-keira-nonenigmatic.ngrok-free.dev/api";
+  static const String baseUrl = "http://13.201.65.238:8000/api";
 
   Future<List<dynamic>> fetchRecentThreats() async {
     try {

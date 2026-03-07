@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'widgets/network_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Import your navigation shell file and auth screen
-import 'navigation_shell.dart';
-import 'screens/auth_screen.dart';
+import 'widgets/network_overlay.dart';
+import 'screens/splash_screen.dart';
 
 // --- GLOBAL THEME STATE ---
 final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
@@ -75,12 +73,10 @@ class RakshaApp extends StatelessWidget {
             return NetworkOverlay(child: child!);
           },
 
-          // THE FIX: Check for an active session.
-          // If logged in -> go to your Navigation Shell.
-          // If not -> go to the Auth Screen.
-          home: Supabase.instance.client.auth.currentSession != null
-              ? MainNavigationShell(themeNotifier: themeNotifier)
-              : const AuthScreen(),
+          // THE FIX: Set the SplashScreen as the initial entry point.
+          // The SplashScreen's _initializeApp() function handles the redirection logic
+          // to either the Navigation Shell or the Auth Screen.
+          home: const LoadingSplashScreen(),
         );
       },
     );
